@@ -1,7 +1,7 @@
 use std::{env, f32::consts::PI, time::Duration};
 
 use iced::{
-  event::Status, executor, keyboard::{self, KeyCode}, widget::canvas::{stroke::{LineCap, Stroke}, Canvas, Cursor, Frame, Geometry, Path, Program}, Application, Command, Element, Event, Point, Subscription, Theme
+  event::Status, executor, keyboard::{self, KeyCode}, widget::canvas::{stroke::{LineCap, Stroke}, Canvas, Cursor, Frame, Geometry, Path, Program, Text}, Application, Command, Element, Event, Point, Subscription, Theme
 };
 use rand::Rng;
 
@@ -109,6 +109,22 @@ impl Program<WavePlotterMessage> for WavePlotterCanvas {
 
     let (min_value, max_value) = get_min_max_x_values(&self.points);
 
+    // Draw axis markers
+    for i in 0..10 {
+      let screen_coord = i as f32 * (bounds.width / 10.0);
+      frame.stroke(
+        &Path::line(Point::new(screen_coord, center.y - 20.0), Point::new(screen_coord, center.y + 20.0)),
+        Stroke::default().with_width(1.0),
+      );
+      frame.fill_text(Text {
+        content: screen_coords_to_plane_coords(screen_coord, bounds.width, min_value, max_value).to_string(),
+        position: Point::new(screen_coord, center.y - 30.0),
+        size: 20.0,
+        color: iced::Color::from_rgb(0.0, 0.5, 0.8), // Light blue color
+        ..Text::default()
+      });
+    }
+
     // Draw wave
     let path = Path::new(|builder| {
         if let Some(first_point) = self.points.first() {
@@ -153,8 +169,9 @@ fn generate_random_wave() -> Vec<Point> {
 
   let mut rng = rand::thread_rng();
   let random_f32: f32 = rng.gen();
+  let scale_factor: f32 = rng.gen();
   for i in 1..=100 {
-    let t: f32 = i as f32 / 10.0;
+    let t: f32 = scale_factor * i as f32 / 10.0;
     result.push(Point::new(t, (t * PI * random_f32).sin()));
   }
   result
@@ -178,9 +195,10 @@ fn get_min_max_x_values(points: &Vec<Point>) -> (f32, f32) {
 }
 
 fn plane_coords_to_screen_coords(value: f32, screen_size: f32, min_value: f32, max_value: f32) -> f32 {
-  return screen_size/(max_value-min_value) * (value - min_value)
+  screen_size/(max_value-min_value) * (value - min_value)
 }
 
-// fn screen_coords_to_plane_coords(coord: f32, min_value: f32, max_value: f32) -> f32 {
+fn screen_coords_to_plane_coords(value: f32, screen_size: f32, min_value: f32, max_value: f32) -> f32 {
+  value * (max_value-min_value) / screen_size + min_value
 
-// }
+}
