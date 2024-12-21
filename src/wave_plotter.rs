@@ -107,14 +107,21 @@ impl Program<WavePlotterMessage> for WavePlotterCanvas {
         Stroke::default().with_width(1.0),
     );
 
-    // Draw sine wave
+    let (min_value, max_value) = get_min_max_x_values(&self.points);
+
+    // Draw wave
     let path = Path::new(|builder| {
         if let Some(first_point) = self.points.first() {
-            builder.move_to(Point::new(first_point.x * 50.0, center.y - first_point.y * 50.0));
+            builder.move_to(
+              Point::new(
+                plane_coords_to_screen_coords(first_point.x, bounds.width, min_value, max_value),
+                center.y - first_point.y * 50.0
+              )
+            );
         }
         for point in &self.points {
-            let x = point.x * 50.0; // Scale X-axis
-            let y = center.y - point.y * 50.0; // Scale Y-axis
+            let x = plane_coords_to_screen_coords(point.x, bounds.width, min_value, max_value);
+            let y = center.y - point.y * 50.0;
             builder.line_to(Point::new(x, y));
         }
     });
@@ -152,3 +159,28 @@ fn generate_random_wave() -> Vec<Point> {
   }
   result
 }
+
+fn get_min_max_x_values(points: &Vec<Point>) -> (f32, f32) {
+  if points.len() == 0{
+    return (1.0, 1.0);
+  }
+  let mut min_x = points[0].x;
+  let mut max_x = points[0].x;
+  for point in points {
+    if point.x < min_x {
+      min_x = point.x
+    }
+    if point.x > max_x {
+      max_x = point.x
+    }
+  }
+  (min_x, max_x)
+}
+
+fn plane_coords_to_screen_coords(value: f32, screen_size: f32, min_value: f32, max_value: f32) -> f32 {
+  return screen_size/(max_value-min_value) * (value - min_value)
+}
+
+// fn screen_coords_to_plane_coords(coord: f32, min_value: f32, max_value: f32) -> f32 {
+
+// }
